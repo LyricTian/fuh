@@ -1,6 +1,6 @@
 # File upload handler
 
-[![License][License-Image]][License-Url] [![ReportCard][ReportCard-Image]][ReportCard-Url] [![Build][Build-Status-Image]][Build-Status-Url] [![GoDoc][GoDoc-Image]][GoDoc-Url]
+[![License][License-Image]][License-Url] [![ReportCard][ReportCard-Image]][ReportCard-Url] [![Build][Build-Status-Image]][Build-Status-Url] [![Coverage][Coverage-Image]][Coverage-Url] [![GoDoc][GoDoc-Image]][GoDoc-Url]
 
 ## Quick Start
 
@@ -68,3 +68,5 @@ Copyright (c) 2016 LyricTian
 [ReportCard-Image]: https://goreportcard.com/badge/github.com/LyricTian/fuh
 [GoDoc-Url]: https://godoc.org/github.com/LyricTian/fuh
 [GoDoc-Image]: https://godoc.org/github.com/LyricTian/fuh?status.svg
+[Coverage-Url]: https://coveralls.io/github/LyricTian/fuh?branch=master
+[Coverage-Image]: https://coveralls.io/repos/github/LyricTian/fuh/badge.svg?branch=master
