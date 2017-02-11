@@ -23,12 +23,8 @@ import (
 )
 
 func main() {
-
-	fstore := fuh.NewFileStore()
-	fupl := fuh.NewUploader(fstore, &fuh.UploadConfig{BasePath: "files", SizeLimit: 1024 * 1024})
-
 	http.HandleFunc("/fileupload", func(w http.ResponseWriter, r *http.Request) {
-		finfo, err := fupl.Upload(r, "file", nil, nil)
+		finfo, err := fuh.Upload(r, "file", nil, nil)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -47,6 +43,12 @@ func main() {
 $ go build server.go
 $ ./server
 ```
+
+## Features
+
+* Supports single or multiple uploads
+* Custom file name
+* Custom file size limit
 
 ## Test
 

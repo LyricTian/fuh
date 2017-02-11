@@ -12,8 +12,9 @@ import (
 )
 
 var (
-	maxMemory  int64 = 32 << 20 // 32M
-	fnReplacer       = strings.NewReplacer("\\", "_")
+	maxMemory  int64       = 32 << 20 // 32M
+	fnReplacer             = strings.NewReplacer("\\", "_")
+	storeKey   interface{} = "Store"
 )
 
 // UploadConfig upload the configuration parameters
@@ -54,6 +55,39 @@ type uploadHandle struct {
 	cfg   *UploadConfig
 }
 
+func (uh *uploadHandle) setConfig(cfg *UploadConfig) {
+	if cfg == nil {
+		return
+	}
+	uh.cfg = cfg
+}
+
+func (uh *uploadHandle) getConfig() *UploadConfig {
+	if uh.cfg == nil {
+		uh.cfg = &UploadConfig{}
+	}
+
+	if uh.cfg.MaxMemory == 0 {
+		uh.cfg.MaxMemory = maxMemory
+	}
+
+	return uh.cfg
+}
+
+func (uh *uploadHandle) setStore(store Storer) {
+	if store == nil {
+		return
+	}
+	uh.store = store
+}
+
+func (uh *uploadHandle) getStore() Storer {
+	if uh.store == nil {
+		uh.store = NewFileStore()
+	}
+	return uh.store
+}
+
 func (uh *uploadHandle) randName() (name string) {
 	buf := make([]byte, 16)
 	n, _ := rand.Read(buf)
@@ -63,7 +97,7 @@ func (uh *uploadHandle) randName() (name string) {
 
 func (uh *uploadHandle) parseHeaders(r *http.Request, key string) (headers []*multipart.FileHeader, err error) {
 	if r.MultipartForm == nil {
-		if err = r.ParseMultipartForm(uh.cfg.MaxMemory); err != nil {
+		if err = r.ParseMultipartForm(uh.getConfig().MaxMemory); err != nil {
 			return
 		}
 	}
@@ -87,14 +121,15 @@ func (uh *uploadHandle) fileHandle(fileheader *multipart.FileHeader, fnh FileNam
 	var (
 		fullName string
 		fileName = fnReplacer.Replace(fileheader.Filename)
+		basePath = uh.getConfig().BasePath
 	)
 
 	if fnh != nil {
-		fullName = fnh(uh.cfg.BasePath, fileName)
+		fullName = fnh(basePath, fileName)
 	}
 
 	if fullName == "" {
-		fullName = filepath.Join(uh.cfg.BasePath, fileName)
+		fullName = filepath.Join(basePath, fileName)
 	}
 
 	file, err := fileheader.Open()
@@ -110,13 +145,15 @@ func (uh *uploadHandle) fileHandle(fileheader *multipart.FileHeader, fnh FileNam
 	}
 
 	fileSize := size.Size()
+	sizeLimit := uh.getConfig().SizeLimit
+
 	if (fsh != nil && !fsh(fileSize)) ||
-		(uh.cfg.SizeLimit != 0 && fileSize > uh.cfg.SizeLimit) {
+		(sizeLimit != 0 && fileSize > sizeLimit) {
 		err = ErrFileTooLarge
 		return
 	}
 
-	err = uh.store.Store(fullName, file, fileSize)
+	err = uh.getStore().Store(fullName, file, fileSize)
 	if err != nil {
 		return
 	}
@@ -159,13 +196,17 @@ func (uh *uploadHandle) UploadMulti(r *http.Request, key string, fnh FileNameHan
 }
 
 func (uh *uploadHandle) UploadReader(r io.Reader, fnh FileNameHandle, fsh FileSizeHandle) (info *FileInfo, err error) {
-	var fullName string
+	var (
+		fullName string
+		basePath = uh.getConfig().BasePath
+	)
+
 	if fnh != nil {
-		fullName = fnh(uh.cfg.BasePath, "")
+		fullName = fnh(basePath, "")
 	}
 
 	if fullName == "" {
-		fullName = filepath.Join(uh.cfg.BasePath, uh.randName())
+		fullName = filepath.Join(basePath, uh.randName())
 	}
 
 	buf := new(bytes.Buffer)
@@ -176,13 +217,14 @@ func (uh *uploadHandle) UploadReader(r io.Reader, fnh FileNameHandle, fsh FileSi
 		return
 	}
 
+	sizeLimit := uh.getConfig().SizeLimit
 	if (fsh != nil && !fsh(fileSize)) ||
-		(uh.cfg.SizeLimit != 0 && fileSize > uh.cfg.SizeLimit) {
+		(sizeLimit != 0 && fileSize > sizeLimit) {
 		err = ErrFileTooLarge
 		return
 	}
 
-	err = uh.store.Store(fullName, buf, fileSize)
+	err = uh.getStore().Store(fullName, buf, fileSize)
 	if err != nil {
 		return
 	}

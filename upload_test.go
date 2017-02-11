@@ -19,10 +19,13 @@ import (
 var (
 	fbase = "testdatas"
 	fkey  = "file"
-	upl   = fuh.NewUploader(fuh.NewFileStore(), &fuh.UploadConfig{
+)
+
+func init() {
+	fuh.SetConfig(&fuh.UploadConfig{
 		BasePath: filepath.Join(fbase, "upload"),
 	})
-)
+}
 
 func fnHandle(base, filename string) string {
 	return filepath.Join(base, randName(), filename)
@@ -34,7 +37,7 @@ func TestUpload(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		Convey("Single file upload", t, func() {
-			finfo, err := upl.Upload(r, fkey, fnHandle, nil)
+			finfo, err := fuh.Upload(r, fkey, fnHandle, nil)
 			So(err, ShouldBeNil)
 			So(finfo, ShouldNotBeNil)
 			So(finfo.Name, ShouldEqual, filename)
@@ -57,7 +60,7 @@ func TestMultiUpload(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		Convey("Multiple files upload", t, func() {
-			finfos, err := upl.UploadMulti(r, fkey, fnHandle, nil)
+			finfos, err := fuh.UploadMulti(r, fkey, fnHandle, nil)
 			So(err, ShouldBeNil)
 			So(finfos, ShouldNotBeNil)
 			So(len(finfos), ShouldEqual, len(filenames))
@@ -79,7 +82,7 @@ func TestUploadSizeLimit(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		Convey("File upload size limit", t, func() {
-			finfo, err := upl.Upload(r, fkey, fnHandle, fsHandle)
+			finfo, err := fuh.Upload(r, fkey, fnHandle, fsHandle)
 			So(err, ShouldNotBeNil)
 			So(finfo, ShouldBeNil)
 		})
@@ -103,7 +106,7 @@ func TestUploadReader(t *testing.T) {
 			return filepath.Join(base, randName(), filename)
 		}
 
-		finfo, err := upl.UploadReader(file, fnHandle, nil)
+		finfo, err := fuh.UploadReader(file, fnHandle, nil)
 		So(err, ShouldBeNil)
 		So(finfo, ShouldNotBeNil)
 		So(finfo.Name, ShouldEqual, filename)
