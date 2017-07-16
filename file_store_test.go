@@ -2,59 +2,64 @@ package fuh_test
 
 import (
 	"bytes"
-	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/LyricTian/fuh"
-
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestFileStore(t *testing.T) {
-	Convey("Local file store", t, func() {
-		filename := "testdatas/upload/store.txt"
-		os.Remove(filename)
+	basePath := "testdatas/"
+	Convey("file storage test", t, func() {
 
-		store := fuh.NewFileStore()
-		ds := "foo"
-		buf := bytes.NewBuffer([]byte(ds))
-
-		err := store.Store(filename, buf, int64(buf.Len()))
-		So(err, ShouldBeNil)
-
-		file, err := os.Open(filename)
-		So(err, ShouldBeNil)
-		So(file, ShouldNotBeNil)
-
-		fbuf := new(bytes.Buffer)
-		io.Copy(fbuf, file)
-		file.Close()
-		So(fbuf.String(), ShouldEqual, ds)
-
-		Convey("Existing file failed", func() {
+		Convey("write data", func() {
 			store := fuh.NewFileStore()
-			buf := bytes.NewBuffer([]byte("123"))
-			err := store.Store(filename, bytes.NewBuffer([]byte("123")), int64(buf.Len()))
-			So(err, ShouldNotBeNil)
-		})
+			buf := []byte("abc")
+			filename := filepath.Join(basePath, "write.txt")
 
-		Convey("Rewriting the file", func() {
-			store := fuh.NewFileStore(&fuh.FileStoreConfig{Rewrite: true})
-			ds := "bar"
-			buf := bytes.NewBuffer([]byte(ds))
-
-			err := store.Store(filename, buf, int64(buf.Len()))
+			err := store.Store(nil, filename, bytes.NewReader(buf), int64(len(buf)))
 			So(err, ShouldBeNil)
+
+			if err == nil {
+				defer os.Remove(filename)
+			}
 
 			file, err := os.Open(filename)
 			So(err, ShouldBeNil)
-			So(file, ShouldNotBeNil)
+			defer file.Close()
 
-			fbuf := new(bytes.Buffer)
-			io.Copy(fbuf, file)
-			file.Close()
-			So(fbuf.String(), ShouldEqual, ds)
+			fbuf, err := ioutil.ReadAll(file)
+			So(err, ShouldBeNil)
+			So(string(fbuf), ShouldEqual, string(buf))
 		})
+
+		Convey("rewrite data", func() {
+			filename := filepath.Join(basePath, "rewrite.txt")
+
+			cfile, err := os.Create(filename)
+			So(err, ShouldBeNil)
+
+			defer os.Remove(filename)
+
+			cfile.Write([]byte("123"))
+			cfile.Close()
+
+			buf := []byte("abc")
+			store := &fuh.FileStore{Rewrite: true}
+			err = store.Store(nil, filename, bytes.NewReader(buf), int64(len(buf)))
+			So(err, ShouldBeNil)
+
+			ofile, err := os.Open(filename)
+			So(err, ShouldBeNil)
+			defer ofile.Close()
+
+			fbuf, err := ioutil.ReadAll(ofile)
+			So(err, ShouldBeNil)
+			So(string(fbuf), ShouldEqual, string(buf))
+		})
+
 	})
 }
