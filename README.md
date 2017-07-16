@@ -54,6 +54,11 @@ $ ./server
 
 ## Features
 
+* Custom file name
+* Custom file size limit
+* Support timeout handler
+* Supports storage extensions
+
 ## MIT License
 
 ```
