@@ -1,4 +1,6 @@
-# File upload handler
+# fuh
+
+> file upload handler
 
 [![License][License-Image]][License-Url] [![ReportCard][ReportCard-Image]][ReportCard-Url] [![Build][Build-Status-Image]][Build-Status-Url] [![Coverage][Coverage-Image]][Coverage-Url] [![GoDoc][GoDoc-Image]][GoDoc-Url]
 
@@ -16,6 +18,7 @@ $ go get github.com/LyricTian/fuh
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -23,13 +26,18 @@ import (
 )
 
 func main() {
+	uploader := fuh.NewUploader(&fuh.Config{
+		BasePath:  "attach",
+		SizeLimit: 10 << 20,
+	}, fuh.NewFileStore())
+
 	http.HandleFunc("/fileupload", func(w http.ResponseWriter, r *http.Request) {
-		finfo, err := fuh.Upload(r, "file", nil, nil)
+		finfos, err := uploader.Upload(context.Background(), r, "file")
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(500)
 			return
 		}
-		json.NewEncoder(w).Encode(finfo)
+		json.NewEncoder(w).Encode(finfos)
 	})
 
 	http.ListenAndServe(":8080", nil)
@@ -45,16 +53,6 @@ $ ./server
 ```
 
 ## Features
-
-* Supports single or multiple uploads
-* Custom file name
-* Custom file size limit
-
-## Test
-
-``` bash
-$ go test -v
-```
 
 ## MIT License
 
