@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"path/filepath"
 
 	"github.com/LyricTian/fuh"
 )
@@ -28,11 +29,16 @@ import (
 func main() {
 	uploader := fuh.NewUploader(&fuh.Config{
 		BasePath:  "attach",
-		SizeLimit: 10 << 20,
+		SizeLimit: 1 << 20,
 	}, fuh.NewFileStore())
 
 	http.HandleFunc("/fileupload", func(w http.ResponseWriter, r *http.Request) {
-		finfos, err := uploader.Upload(context.Background(), r, "file")
+
+		ctx := fuh.NewFileNameContext(context.Background(), func(ci fuh.ContextInfo) string {
+			return filepath.Join(ci.BasePath(), ci.FileName())
+		})
+
+		finfos, err := uploader.Upload(ctx, r, "file")
 		if err != nil {
 			w.WriteHeader(500)
 			return

@@ -92,6 +92,7 @@ func (u *uploadHandle) maxMemory() int64 {
 
 func (u *uploadHandle) uploadDo(ctx context.Context, r *http.Request, fheader *multipart.FileHeader, f func(FileInfo)) error {
 	c := make(chan error, 1)
+	ctxDone := make(chan struct{})
 
 	go func() {
 		file, err := fheader.Open()
@@ -139,6 +140,12 @@ func (u *uploadHandle) uploadDo(ctx context.Context, r *http.Request, fheader *m
 			return
 		}
 
+		select {
+		case <-ctxDone:
+			return
+		default:
+		}
+
 		var fInfo FileInfo = &fileInfo{
 			fullName: fullName,
 			size:     fsize,
@@ -150,6 +157,7 @@ func (u *uploadHandle) uploadDo(ctx context.Context, r *http.Request, fheader *m
 
 	select {
 	case <-ctx.Done():
+		close(ctxDone)
 		return ctx.Err()
 	case err := <-c:
 		return err
