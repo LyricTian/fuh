@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/LyricTian/fuh"
 	. "github.com/smartystreets/goconvey/convey"
@@ -22,7 +24,8 @@ func TestFileUpload(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		Convey("single file upload test", t, func() {
-			uploader := fuh.NewUploader(&fuh.Config{BasePath: basePath}, fuh.NewFileStore())
+			config := &fuh.Config{BasePath: basePath, SizeLimit: 1 << 20, MaxMemory: 10 << 20}
+			uploader := fuh.NewUploader(config, fuh.NewFileStore())
 
 			fileInfos, err := uploader.Upload(nil, r, "file")
 			So(err, ShouldBeNil)
@@ -43,10 +46,7 @@ func TestFileUpload(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	err := postFile(srv.URL, buf, filename)
-	if err != nil {
-		t.Error(err.Error())
-	}
+	postFile(srv.URL, buf, filename)
 }
 
 func TestCustomFileName(t *testing.T) {
@@ -82,10 +82,7 @@ func TestCustomFileName(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	err := postFile(srv.URL, buf, filename)
-	if err != nil {
-		t.Error(err.Error())
-	}
+	postFile(srv.URL, buf, filename)
 }
 
 func TestFileSizeLimit(t *testing.T) {
@@ -109,20 +106,66 @@ func TestFileSizeLimit(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	err := postFile(srv.URL, buf, filename)
-	if err != nil {
-		t.Error(err.Error())
-	}
+	postFile(srv.URL, buf, filename)
 }
 
-func postFile(targetURL string, data []byte, filenames ...string) (err error) {
+func TestUploadTimeout(t *testing.T) {
+	basePath := "testdatas/"
+	filename := "uploadtimeout_test.txt"
+	buf := []byte("abc")
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Convey("file upload timeout test", t, func() {
+			uploader := fuh.NewUploader(&fuh.Config{BasePath: basePath}, fuh.NewFileStore())
+
+			ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond*10)
+			defer cancel()
+
+			fileInfos, err := uploader.Upload(ctx, r, "file")
+			So(fileInfos, ShouldBeNil)
+			So(err, ShouldNotBeNil)
+			So(err.Error(), ShouldEqual, context.DeadlineExceeded.Error())
+		})
+	}))
+	defer srv.Close()
+
+	postFile(srv.URL, buf, filename)
+}
+
+func TestFileSize(t *testing.T) {
+	basePath := "testdatas/"
+	filename := "filesize_test.txt"
+	buf := make([]byte, 1024)
+	for i := 0; i < 1024; i++ {
+		buf[i] = '0'
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Convey("file size test", t, func() {
+			uploader := fuh.NewUploader(&fuh.Config{BasePath: basePath, MaxMemory: 128}, fuh.NewFileStore())
+
+			defer os.Remove(filepath.Join(basePath, filename))
+
+			fileInfos, err := uploader.Upload(context.Background(), r, "file")
+			So(err, ShouldBeNil)
+			So(len(fileInfos), ShouldEqual, 1)
+			So(fileInfos[0].Size(), ShouldEqual, len(buf))
+
+		})
+	}))
+	defer srv.Close()
+
+	postFile(srv.URL, buf, filename)
+}
+
+func postFile(targetURL string, data []byte, filenames ...string) {
 	bodyBuf := &bytes.Buffer{}
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
 	for _, filename := range filenames {
-		fileWriter, verr := bodyWriter.CreateFormFile("file", filename)
-		if verr != nil {
-			err = verr
+		fileWriter, err := bodyWriter.CreateFormFile("file", filename)
+		if err != nil {
+			log.Println(err.Error())
 			return
 		}
 		fileWriter.Write(data)
