@@ -35,10 +35,6 @@ func NewUploader(cfg *Config, store Storer) Uploader {
 	}
 }
 
-func newUploader() *uploadHandle {
-	return &uploadHandle{}
-}
-
 type uploadHandle struct {
 	cfg   *Config
 	store Storer
