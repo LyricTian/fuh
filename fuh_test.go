@@ -25,9 +25,11 @@ func TestFileUpload(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		Convey("single file upload test", t, func() {
 			config := &fuh.Config{BasePath: basePath, SizeLimit: 1 << 20, MaxMemory: 10 << 20}
-			uploader := fuh.NewUploader(config, fuh.NewFileStore())
 
-			fileInfos, err := uploader.Upload(nil, r, "file")
+			fuh.SetConfig(config)
+			fuh.SetStore(fuh.NewFileStore())
+
+			fileInfos, err := fuh.Upload(nil, r, "file")
 			So(err, ShouldBeNil)
 			So(len(fileInfos), ShouldEqual, 1)
 			So(fileInfos[0].Size(), ShouldEqual, len(buf))
