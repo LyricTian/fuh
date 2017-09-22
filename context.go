@@ -7,7 +7,8 @@ import (
 )
 
 type (
-	ctxKey int
+	fileSizeLimitKey struct{}
+	fileNameKey      struct{}
 
 	// ContextInfo the context information
 	ContextInfo interface {
@@ -25,30 +26,25 @@ type (
 	FileNameHandle func(ci ContextInfo) string
 )
 
-const (
-	fileSizeLimitKey ctxKey = 1 << iota
-	fileNameKey
-)
-
 // NewFileSizeLimitContext returns a new Context that carries value fsl.
 func NewFileSizeLimitContext(ctx context.Context, fsl FileSizeLimitHandle) context.Context {
-	return context.WithValue(ctx, fileSizeLimitKey, fsl)
+	return context.WithValue(ctx, fileSizeLimitKey{}, fsl)
 }
 
 // FromFileSizeLimitContext returns the FileSizeLimitHandle value stored in ctx, if any.
 func FromFileSizeLimitContext(ctx context.Context) (FileSizeLimitHandle, bool) {
-	handle, ok := ctx.Value(fileSizeLimitKey).(FileSizeLimitHandle)
+	handle, ok := ctx.Value(fileSizeLimitKey{}).(FileSizeLimitHandle)
 	return handle, ok
 }
 
 // NewFileNameContext returns a new Context that carries value fn.
 func NewFileNameContext(ctx context.Context, fn FileNameHandle) context.Context {
-	return context.WithValue(ctx, fileNameKey, fn)
+	return context.WithValue(ctx, fileNameKey{}, fn)
 }
 
 // FromFileNameContext returns the FileNameHandle value stored in ctx, if any.
 func FromFileNameContext(ctx context.Context) (FileNameHandle, bool) {
-	handle, ok := ctx.Value(fileNameKey).(FileNameHandle)
+	handle, ok := ctx.Value(fileNameKey{}).(FileNameHandle)
 	return handle, ok
 }
 
