@@ -26,24 +26,24 @@ var (
 	upload *uploadHandle
 )
 
-// SetConfig set the configuration parameters
-func SetConfig(cfg *Config) {
-	newUploader().cfg = cfg
-}
-
-// SetStore set storage
-func SetStore(store Storer) {
-	newUploader().store = store
-}
-
-// Upload file upload
-func Upload(ctx context.Context, r *http.Request, key string) ([]FileInfo, error) {
-	return newUploader().Upload(ctx, r, key)
-}
-
-func newUploader() *uploadHandle {
+func uploader() *uploadHandle {
 	if upload == nil {
 		upload = &uploadHandle{}
 	}
 	return upload
+}
+
+// SetConfig set the configuration parameters
+func SetConfig(cfg *Config) {
+	uploader().cfg = cfg
+}
+
+// SetStore set storage
+func SetStore(store Storer) {
+	uploader().store = store
+}
+
+// Upload file upload
+func Upload(ctx context.Context, r *http.Request, key string) ([]FileInfo, error) {
+	return uploader().Upload(ctx, r, key)
 }

@@ -1,6 +1,4 @@
-# fuh
-
-> file upload handler
+# fuh - upload handler library
 
 [![License][License-Image]][License-Url] [![ReportCard][ReportCard-Image]][ReportCard-Url] [![Build][Build-Status-Image]][Build-Status-Url] [![Coverage][Coverage-Image]][Coverage-Url] [![GoDoc][GoDoc-Image]][GoDoc-Url]
 
@@ -9,7 +7,7 @@
 ### Download and install
 
 ``` bash
-$ go get github.com/LyricTian/fuh
+go get github.com/LyricTian/fuh
 ```
 
 ### Create file `server.go`
