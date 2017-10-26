@@ -9,6 +9,7 @@ import (
 // FileInfo upload the basic information of the file
 type FileInfo interface {
 	FullName() string
+	Name() string
 	Size() int64
 }
 

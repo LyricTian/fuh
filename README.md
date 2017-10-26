@@ -66,7 +66,7 @@ $ ./server
 ## MIT License
 
 ```
-Copyright (c) 2016 LyricTian
+Copyright (c) 2017 LyricTian
 ```
 
 [License-Url]: http://opensource.org/licenses/MIT

@@ -144,6 +144,7 @@ func (u *uploadHandle) uploadDo(ctx context.Context, r *http.Request, fheader *m
 
 		var fInfo FileInfo = &fileInfo{
 			fullName: fullName,
+			name:     ctxInfo.FileName(),
 			size:     fsize,
 		}
 
@@ -187,11 +188,16 @@ type fstat interface {
 
 type fileInfo struct {
 	fullName string
+	name     string
 	size     int64
 }
 
 func (fi *fileInfo) FullName() string {
 	return fi.fullName
+}
+
+func (fi *fileInfo) Name() string {
+	return fi.name
 }
 
 func (fi *fileInfo) Size() int64 {
