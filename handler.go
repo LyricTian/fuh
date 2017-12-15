@@ -111,6 +111,7 @@ func (u *uploadHandle) uploadDo(ctx context.Context, r *http.Request, fheader *m
 			fileHeader: fheader.Header,
 			req:        r,
 		}
+		ctx = NewContextInfoContext(ctx, ctxInfo)
 
 		// upload file size limit
 		if h, ok := FromFileSizeLimitContext(ctx); ok {
