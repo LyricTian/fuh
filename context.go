@@ -9,6 +9,7 @@ import (
 type (
 	fileSizeLimitKey struct{}
 	fileNameKey      struct{}
+	contextInfoKey   struct{}
 
 	// ContextInfo the context information
 	ContextInfo interface {
@@ -46,6 +47,17 @@ func NewFileNameContext(ctx context.Context, fn FileNameHandle) context.Context 
 func FromFileNameContext(ctx context.Context) (FileNameHandle, bool) {
 	handle, ok := ctx.Value(fileNameKey{}).(FileNameHandle)
 	return handle, ok
+}
+
+// NewContextInfoContext returns a new Context that context information ci.
+func NewContextInfoContext(ctx context.Context, ci ContextInfo) context.Context {
+	return context.WithValue(ctx, contextInfoKey{}, ci)
+}
+
+// FromContextInfoContext returns the ContextInfo value stored in ctx, if any.
+func FromContextInfoContext(ctx context.Context) (ContextInfo, bool) {
+	info, ok := ctx.Value(contextInfoKey{}).(ContextInfo)
+	return info, ok
 }
 
 type contextInfo struct {
