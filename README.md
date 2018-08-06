@@ -57,10 +57,10 @@ $ ./server
 
 ## Features
 
--   Custom file name
--   Custom file size limit
--   Support timeout handler
--   Supports storage extensions
+- Custom file name
+- Custom file size limit
+- Supports storage extensions
+- Context support
 
 ## MIT License
 
