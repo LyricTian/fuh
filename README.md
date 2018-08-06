@@ -1,18 +1,18 @@
-# fuh - upload handler library
+# Golang File Upload Handler
 
-[![License][License-Image]][License-Url] [![ReportCard][ReportCard-Image]][ReportCard-Url] [![Build][Build-Status-Image]][Build-Status-Url] [![Coverage][Coverage-Image]][Coverage-Url] [![GoDoc][GoDoc-Image]][GoDoc-Url]
+[![Build][Build-Status-Image]][Build-Status-Url] [![Codecov][codecov-image]][codecov-url] [![ReportCard][reportcard-image]][reportcard-url] [![GoDoc][godoc-image]][godoc-url] [![License][license-image]][license-url]
 
 ## Quick Start
 
 ### Download and install
 
-``` bash
-go get github.com/LyricTian/fuh
+```bash
+go get -v github.com/LyricTian/fuh
 ```
 
 ### Create file `server.go`
 
-``` go
+```go
 package main
 
 import (
@@ -25,7 +25,7 @@ import (
 )
 
 func main() {
-	uploader := fuh.NewUploader(&fuh.Config{
+	upl := fuh.NewUploader(&fuh.Config{
 		BasePath:  "attach",
 		SizeLimit: 1 << 20,
 	}, fuh.NewFileStore())
@@ -36,7 +36,7 @@ func main() {
 			return filepath.Join(ci.BasePath(), ci.FileName())
 		})
 
-		finfos, err := uploader.Upload(ctx, r, "file")
+		finfos, err := upl.Upload(ctx, r, "file")
 		if err != nil {
 			w.WriteHeader(500)
 			return
@@ -46,36 +46,33 @@ func main() {
 
 	http.ListenAndServe(":8080", nil)
 }
-
 ```
 
 ### Build and run
 
-``` bash
+```bash
 $ go build server.go
 $ ./server
 ```
 
 ## Features
 
-* Custom file name
-* Custom file size limit
-* Support timeout handler
-* Supports storage extensions
+-   Custom file name
+-   Custom file size limit
+-   Support timeout handler
+-   Supports storage extensions
 
 ## MIT License
 
-```
-Copyright (c) 2017 LyricTian
-```
+    Copyright (c) 2017 Lyric
 
-[License-Url]: http://opensource.org/licenses/MIT
-[License-Image]: https://img.shields.io/npm/l/express.svg
 [Build-Status-Url]: https://travis-ci.org/LyricTian/fuh
 [Build-Status-Image]: https://travis-ci.org/LyricTian/fuh.svg?branch=master
-[ReportCard-Url]: https://goreportcard.com/report/github.com/LyricTian/fuh
-[ReportCard-Image]: https://goreportcard.com/badge/github.com/LyricTian/fuh
-[GoDoc-Url]: https://godoc.org/github.com/LyricTian/fuh
-[GoDoc-Image]: https://godoc.org/github.com/LyricTian/fuh?status.svg
-[Coverage-Url]: https://coveralls.io/github/LyricTian/fuh?branch=master
-[Coverage-Image]: https://coveralls.io/repos/github/LyricTian/fuh/badge.svg?branch=master
+[codecov-url]: https://codecov.io/gh/LyricTian/fuh
+[codecov-image]: https://codecov.io/gh/LyricTian/fuh/branch/master/graph/badge.svg
+[reportcard-url]: https://goreportcard.com/report/github.com/LyricTian/fuh
+[reportcard-image]: https://goreportcard.com/badge/github.com/LyricTian/fuh
+[godoc-url]: https://godoc.org/github.com/LyricTian/fuh
+[godoc-image]: https://godoc.org/github.com/LyricTian/fuh?status.svg
+[license-url]: http://opensource.org/licenses/MIT
+[license-image]: https://img.shields.io/npm/l/express.svg

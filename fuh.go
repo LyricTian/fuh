@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"sync"
 )
 
 // FileInfo upload the basic information of the file
@@ -24,14 +25,15 @@ type Storer interface {
 }
 
 var (
-	upload *uploadHandle
+	internalHandle *uploadHandle
+	once           sync.Once
 )
 
 func uploader() *uploadHandle {
-	if upload == nil {
-		upload = &uploadHandle{}
-	}
-	return upload
+	once.Do(func() {
+		internalHandle = &uploadHandle{}
+	})
+	return internalHandle
 }
 
 // SetConfig set the configuration parameters
