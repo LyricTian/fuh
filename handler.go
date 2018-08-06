@@ -60,16 +60,15 @@ func (u *uploadHandle) Upload(ctx context.Context, r *http.Request, key string) 
 		return nil, ErrMissingFile
 	}
 
-	var finfos []FileInfo
+	var infos []FileInfo
 	for _, file := range r.MultipartForm.File[key] {
-		err := u.uploadDo(ctx, r, file, func(finfo FileInfo) {
-			finfos = append(finfos, finfo)
-		})
+		info, err := u.uploadDo(ctx, r, file)
 		if err != nil {
-			return finfos, err
+			return infos, err
 		}
+		infos = append(infos, info)
 	}
-	return finfos, nil
+	return infos, nil
 }
 
 func (u *uploadHandle) config() *Config {
@@ -86,80 +85,52 @@ func (u *uploadHandle) maxMemory() int64 {
 	return defaultMaxMemory
 }
 
-func (u *uploadHandle) uploadDo(ctx context.Context, r *http.Request, fheader *multipart.FileHeader, f func(FileInfo)) error {
-	c := make(chan error, 1)
-	ctxDone := make(chan struct{})
-
-	go func() {
-		file, err := fheader.Open()
-		if err != nil {
-			c <- err
-			return
-		}
-		defer file.Close()
-
-		fsize, err := u.fileSize(file)
-		if err != nil {
-			c <- err
-			return
-		}
-
-		var ctxInfo ContextInfo = &contextInfo{
-			basePath:   u.config().BasePath,
-			fileName:   fheader.Filename,
-			fileSize:   fsize,
-			fileHeader: fheader.Header,
-			req:        r,
-		}
-		ctx = NewContextInfoContext(ctx, ctxInfo)
-
-		// upload file size limit
-		if h, ok := FromFileSizeLimitContext(ctx); ok {
-			if !h(ctxInfo) {
-				c <- ErrFileTooLarge
-				return
-			}
-		} else if sl := u.config().SizeLimit; sl > 0 && fsize > sl {
-			c <- ErrFileTooLarge
-			return
-		}
-
-		var fullName string
-		if h, ok := FromFileNameContext(ctx); ok {
-			fullName = h(ctxInfo)
-		} else {
-			fullName = filepath.Join(ctxInfo.BasePath(), ctxInfo.FileName())
-		}
-
-		err = u.store.Store(ctx, fullName, file, fsize)
-		if err != nil {
-			c <- err
-			return
-		}
-
-		select {
-		case <-ctxDone:
-			return
-		default:
-		}
-
-		var fInfo FileInfo = &fileInfo{
-			fullName: fullName,
-			name:     ctxInfo.FileName(),
-			size:     fsize,
-		}
-
-		f(fInfo)
-		c <- nil
-	}()
-
-	select {
-	case <-ctx.Done():
-		close(ctxDone)
-		return ctx.Err()
-	case err := <-c:
-		return err
+func (u *uploadHandle) uploadDo(ctx context.Context, r *http.Request, fheader *multipart.FileHeader) (FileInfo, error) {
+	file, err := fheader.Open()
+	if err != nil {
+		return nil, err
 	}
+	defer file.Close()
+
+	size, err := u.fileSize(file)
+	if err != nil {
+		return nil, err
+	}
+
+	ctxInfo := &contextInfo{
+		basePath:   u.config().BasePath,
+		fileName:   fheader.Filename,
+		fileSize:   size,
+		fileHeader: fheader.Header,
+		req:        r,
+	}
+	ctx = NewContextInfoContext(ctx, ctxInfo)
+
+	if h, ok := FromFileSizeLimitContext(ctx); ok {
+		if !h(ctxInfo) {
+			return nil, ErrFileTooLarge
+		}
+	} else if sl := u.config().SizeLimit; sl > 0 && size > sl {
+		return nil, ErrFileTooLarge
+	}
+
+	var fullName string
+	if h, ok := FromFileNameContext(ctx); ok {
+		fullName = h(ctxInfo)
+	} else {
+		fullName = filepath.Join(ctxInfo.BasePath(), ctxInfo.FileName())
+	}
+
+	err = u.store.Store(ctx, fullName, file, size)
+	if err != nil {
+		return nil, err
+	}
+
+	return &fileInfo{
+		fullName: fullName,
+		name:     ctxInfo.FileName(),
+		size:     size,
+	}, nil
 }
 
 // get the size of the uploaded file

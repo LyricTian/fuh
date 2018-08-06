@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/LyricTian/fuh"
 	. "github.com/smartystreets/goconvey/convey"
@@ -104,29 +103,6 @@ func TestFileSizeLimit(t *testing.T) {
 			So(fileInfos, ShouldBeNil)
 			So(err, ShouldNotBeNil)
 			So(err, ShouldEqual, fuh.ErrFileTooLarge)
-		})
-	}))
-	defer srv.Close()
-
-	postFile(srv.URL, buf, filename)
-}
-
-func TestUploadTimeout(t *testing.T) {
-	basePath := "testdatas/"
-	filename := "uploadtimeout_test.txt"
-	buf := []byte("abc")
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Convey("file upload timeout test", t, func() {
-			uploader := fuh.NewUploader(&fuh.Config{BasePath: basePath}, fuh.NewFileStore())
-
-			ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond*10)
-			defer cancel()
-
-			fileInfos, err := uploader.Upload(ctx, r, "file")
-			So(fileInfos, ShouldBeNil)
-			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldEqual, context.DeadlineExceeded.Error())
 		})
 	}))
 	defer srv.Close()

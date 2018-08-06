@@ -49,64 +49,34 @@ func (f *FileStore) Store(ctx context.Context, filename string, data io.Reader, 
 		ctx = context.Background()
 	}
 
-	c := make(chan error, 1)
-	ctxDone := make(chan struct{})
-
-	go func() {
-		exists, err := f.exists(filename)
-		if err != nil {
-			c <- err
-			return
-		} else if exists {
-			if !f.Rewrite {
-				c <- ErrFileExists
-				return
-			}
-			os.Remove(filename)
+	exists, err := f.exists(filename)
+	if err != nil {
+		return err
+	} else if exists {
+		if !f.Rewrite {
+			return ErrFileExists
 		}
+		os.Remove(filename)
+	}
 
-		dir := filepath.Dir(filename)
-		if dir != "" {
-			exists, err = f.exists(dir)
+	dir := filepath.Dir(filename)
+	if dir != "" {
+		if exists, err := f.exists(dir); err != nil {
+			return err
+		} else if !exists {
+			err = os.MkdirAll(dir, os.ModePerm)
 			if err != nil {
-				c <- err
-				return
-			} else if !exists {
-				err = os.MkdirAll(dir, os.ModePerm)
-				if err != nil {
-					c <- err
-					return
-				}
+				return err
 			}
 		}
+	}
 
-		file, err := os.Create(filename)
-		if err != nil {
-			c <- err
-			return
-		}
-		defer file.Close()
-
-		_, err = io.CopyN(file, data, size)
-		if err != nil {
-			c <- err
-			return
-		}
-
-		select {
-		case <-ctxDone:
-			os.Remove(filename)
-		default:
-		}
-
-		c <- nil
-	}()
-
-	select {
-	case <-ctx.Done():
-		close(ctxDone)
-		return ctx.Err()
-	case err := <-c:
+	file, err := os.Create(filename)
+	if err != nil {
 		return err
 	}
+	defer file.Close()
+
+	_, err = io.CopyN(file, data, size)
+	return err
 }
