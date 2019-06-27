@@ -16,14 +16,22 @@ var (
 )
 
 // NewFileStore create a file store
-func NewFileStore() Storer {
+func NewFileStore() *FileStore {
 	return &FileStore{}
+}
+
+// NewFileStoreWithBasePath create a file store with base path
+func NewFileStoreWithBasePath(basePath string) *FileStore {
+	return &FileStore{
+		BasePath: basePath,
+	}
 }
 
 // FileStore file storage
 type FileStore struct {
 	// rewrite the existing file
-	Rewrite bool
+	Rewrite  bool
+	BasePath string
 }
 
 func (f *FileStore) exists(filename string) (exists bool, err error) {
@@ -43,6 +51,10 @@ func (f *FileStore) exists(filename string) (exists bool, err error) {
 func (f *FileStore) Store(ctx context.Context, filename string, data io.Reader, size int64) error {
 	if filename == "" || data == nil || size == 0 {
 		return ErrNoData
+	}
+
+	if f.BasePath != "" {
+		filename = filepath.Join(f.BasePath, filename)
 	}
 
 	if ctx == nil {
